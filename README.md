@@ -1,7 +1,7 @@
 # Note Taker
 
 ## Description
-This application allow users to write save & delete notes upon the completion of a task.
+This application allow users to write, save & delete notes upon the completion of a task.
 
 ## User Story
 
