@@ -10,7 +10,7 @@ if (window.location.pathname === '/notes') {
   saveNoteBtn = document.querySelector('.save-note');
   newNoteBtn = document.querySelector('.new-note');
   noteList = document.querySelectorAll('.list-container .list-group');
-}
+};
 
 // Show an element
 const show = (elem) => {
@@ -32,11 +32,10 @@ const getNotes = () =>
       'Content-Type': 'application/json',
     },
   })
-    .then((response) => response.json())
-    .then((data) => data)
-    .catch((error) => {
-      console.error('Error:', error);
-    });
+  .then((res) => res.json())
+  .then((data) => {
+  return data;
+  })
 
 const saveNote = (note) =>
   fetch('/api/notes', {
@@ -46,23 +45,21 @@ const saveNote = (note) =>
     },
     body: JSON.stringify(note),
   })
-    .then((response) => response.json())
+    .then((res) => res.json())
+    .then((data) => {
+      console.log('Successful POST request:', data);
+      return data;
+    })
     .catch((error) => {
-      console.error('Error:', error);
+      console.error('Error in POST request:', error);
     });
 
 const deleteNote = (id) =>
-  fetch(`/api/notes/:${id}`, {
+  fetch(`/api/notes/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
-    
-  })
-  .then((response) => response.json())
-  .then((data) => data)
-  .catch((error) => {
-    console.error('Error:', error);
   });
 
 const renderActiveNote = () => {
@@ -105,7 +102,7 @@ const handleNoteDelete = (e) => {
   }
 
   deleteNote(noteId).then(() => {
-    // getAndRenderNotes();
+    getAndRenderNotes();
     renderActiveNote();
   });
 };
@@ -132,8 +129,15 @@ const handleRenderSaveBtn = () => {
 };
 
 // Render the list of note titles
-const renderNoteList = async (notes) => {
-  let jsonNotes = notes;
+// const renderNoteList = async (notes) => {
+//   let jsonNotes = await notes.json();
+//   if (window.location.pathname === '/notes') {
+//     noteList.forEach((el) => (el.innerHTML = ''));
+//   }
+
+//   let noteListItems = [];
+
+const renderNoteList = (notes) => {
   if (window.location.pathname === '/notes') {
     noteList.forEach((el) => (el.innerHTML = ''));
   }
@@ -167,13 +171,42 @@ const renderNoteList = async (notes) => {
     }
 
     return liEl;
+  }
+}
+
+  // if (jsonNotes.length === 0) {
+  //   noteListItems.push(createLi('No saved Notes', false));
+  // }
+
+//   jsonNotes.forEach((note) => {
+//     const li = createLi(note.title);
+//     li.dataset.note = JSON.stringify(note);
+
+//     noteListItems.push(li);
+//   });
+
+//   if (window.location.pathname === '/notes') {
+//     noteListItems.forEach((note) => noteList[0].append(note));
+//   }
+// };
+
+const renderNoteList = (notes) => {
+  if (window.location.pathname === '/notes') {
+    noteList.forEach((el) => (el.innerHTML = ''));
+  }
+
+  let noteListItems = [];
+
+  // Returns HTML element with or without a delete button
+  const createLi = (text, delBtn = true) => {
+    // ... rest of the code
   };
 
-  if (jsonNotes.length === 0) {
+  if (notes.length === 0) {
     noteListItems.push(createLi('No saved Notes', false));
   }
 
-  jsonNotes.forEach((note) => {
+  notes.forEach((note) => {
     const li = createLi(note.title);
     li.dataset.note = JSON.stringify(note);
 
@@ -185,8 +218,18 @@ const renderNoteList = async (notes) => {
   }
 };
 
+
 // Gets notes from the db and renders them to the sidebar
-const getAndRenderNotes = () => getNotes().then(renderNoteList);
+// const getAndRenderNotes = () => getNotes().then(renderNoteList);
+
+const getAndRenderNotes = () => {
+  getNotes()
+    .then((notes) => renderNoteList(notes))
+    .catch((error) => {
+      console.error('Error getting notes:', error);
+    });
+};
+
 
 if (window.location.pathname === '/notes') {
   saveNoteBtn.addEventListener('click', handleNoteSave);

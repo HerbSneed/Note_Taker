@@ -1,39 +1,131 @@
-const fs = require('fs');
 const express = require('express');
-const db = require('./db/db.json');
-
-
+const path = require('path');
 const app = express();
-const PORT = 3001;
+const PORT = 3004;
+const fs = require('fs');
+// const db = require('./db/db.json');
+const uuid = require('./helpers/uuid.js');
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static('public'));
-// app.use(express)
 
-app.get('/', (req, res) => res.send('navigate to routes')
+// HTML Routes
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, '/public/index.html'))
 );
 
-app.get('/send', (req, res) => 
-  res.send.sendFile(path.join(__dirname, 'public/notes.html'))
+app.get('/notes', (req, res) =>
+  res.sendFile(path.join(__dirname, '/public/notes.html'))
 );
 
-app.get('/api/db', (req, res) => {
-  res.json(db)
-});
+app.get('/styles', (req,res) => 
+  res.sendFile(path.join(__dirname, '/public/assets/css'))
+);
 
-app.get('/api/db/:title', (req, res) => {
-  var requestedTitle = req.params.title.toLowerCase();
-
-  for (let i = 0; i < db.length; i++) {
-    if (requestedTitle === db[i].title.toLowerCase()) {
-      return res.json(db[i]);
+//API Routes
+app.get('/api/notes', (req, res) => {
+  fs.readFile('./db/db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json('Error reading notes from the database');
     }
-  }
-  return res.json('No object found');
+
+    const notes = JSON.parse(data);
+    return res.json(notes);
+  })
 });
 
 
+app.post('/api/notes', (req, res) => {
+  // Request Body
+  console.info(`${req.method} request received to add a review`);
+  const { title, text } = req.body;
+
+  if (title && text) {
+    const activeNote = {
+      title,
+      text,
+      id: uuid(),
+    };
+    
+    fs.readFile('./db/db.json','utf8', (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+      const newNote = JSON.parse(data);
+   
+        newNote.push(activeNote);
+        fs.writeFile('./db/db.json', JSON.stringify(newNote, null, 2), (writeErr) =>
+        writeErr
+              ? console.error(writeErr)
+              : console.info(`Note for ${activeNote.title} has been written to JSON file`)
+        );
+      }
+    });
+
+    const response = {
+      status: 'success',
+      body: activeNote,
+    };
+    console.log(response);
+    res.status(201).json(response);
+  } else {
+    res.status(500).json('Error in posting review');
+  }
+  
+  });
+
+  app.delete('/api/notes/:id', (req, res) => {
+    console.info(`${req.method} request received to add a review`);
+    const {id, title, text} = req.body;
+  
+    if (id) {
+      const activeNote = {
+        title,
+        text,
+        id,
+      };
+      console.info(activeNote);
+
+      fs.readFile('./db/db.json','utf8', (err, data) => {
+        if (err) {
+          console.error(err);
+        } else {
+        const newNote = JSON.parse(data);
+        const findIndex = (arr, id) => {
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i].id === id) {
+              return i;
+            }
+          }
+        }
+        const index = findIndex(newNote, activeNote.id);
+        console.log(index);
+     
+        newNote.splice(index, 1);
+          fs.writeFile('./db/db.json', JSON.stringify(newNote, null, 2), (writeErr) =>
+          writeErr
+                ? console.error(writeErr)
+                : console.info(`Note for ${activeNote.title} has been deleted in JSON file`)
+          );
+        }
+      });
+  
+      const response = {
+        status: 'success',
+        body: activeNote,
+      };
+      console.log(response);
+      res.status(201).json(response);
+    } else {
+      res.status(500).json('Error in deleting review');
+    }
+  })
+
+//Listening
 app.listen(PORT, () =>
-console.log(`App listening at http://localhost:${PORT}`)
+  console.log(`App listening at http://localhost:${PORT}`)
 );
 
